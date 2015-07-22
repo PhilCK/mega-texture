@@ -19,6 +19,7 @@ namespace
   const uint32_t mega_texture_size      = 32768;
   const uint32_t mega_texture_mip_size  = 512;
   const uint32_t number_of_mips         = 5;
+  const uint32_t camera_move_speed      = 10.f;
   
   // Window/Input etc.
   sdl::window             window(screen_width, screen_height, false, "Mega Texture");
@@ -35,8 +36,10 @@ namespace
   
   // Math things
   const caff_math::matrix44 proj  = caff_math::matrix44_init_projection(screen_width, screen_height, 0.1f, 100.f, caff_math::pi() * 0.25f);
-  caff_math::matrix44       world = caff_math::matrix44_id();
-  caff_math::matrix44       view  = caff_math::matrix44_id();
+  caff_math::matrix44       world = caff_math::matrix44_id(); // kill this when transform working better.
+  caff_math::matrix44       view  = caff_math::matrix44_id(); // kill this when transform working better.
+  
+  caff_math::transform      camera_transform; // position of the camera.
 }
 
 
@@ -77,6 +80,9 @@ void game_loop()
 int main()
 {
   // Tap into error messages (we won't get startup errors because sdl_wrappers are in anon namespace.
+  {
+    
+  }
   
   // SDL load ok?
   {
@@ -131,8 +137,6 @@ int main()
   
   // Init math things
   {
-    caff_math::transform camera_transform;
-    
     camera_transform.position = caff_math::vector3_init(-4.f, 1.f, 1.f);
     camera_transform.rotation = caff_math::quaternion_init_with_axis_angle(0, 1, 0, caff_math::quart_tau());
     
