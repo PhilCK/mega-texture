@@ -21,23 +21,22 @@ namespace
   const uint32_t number_of_mips         = 5;
   
   // Window/Input etc.
-  sdl::window window(screen_width, screen_height, false, "Mega Texture");
-  const sdl::input input(window);
-  const sdl::ogl_context ogl_context(window);
+  sdl::window             window(screen_width, screen_height, false, "Mega Texture");
+  const sdl::input        input(window);
+  const sdl::ogl_context  ogl_context(window);
   
   // Graphics things.
-  renderer::shader simple_shader;
-  renderer::vertex_format vert_fmt;
+  renderer::shader                              simple_shader;
+  renderer::vertex_format                       vert_fmt;
   std::array<renderer::texture, number_of_mips> dynamic_mips;
-  renderer::texture green_grid_texture;
-  renderer::texture orange_grid_texture;
-  renderer::vertex_buffer obj_cube;
-  renderer::vertex_buffer obj_plane;
+  renderer::texture                             green_grid_texture;
+  renderer::texture                             orange_grid_texture;
+  renderer::vertex_buffer                       obj_plane;
   
   // Math things
-  const caff_math::matrix44 proj = caff_math::matrix44_init_projection(screen_width, screen_height, 0.1f, 100.f, caff_math::pi() * 0.25f);
-  caff_math::matrix44 world;
-  caff_math::matrix44 view;
+  const caff_math::matrix44 proj  = caff_math::matrix44_init_projection(screen_width, screen_height, 0.1f, 100.f, caff_math::pi() * 0.25f);
+  caff_math::matrix44       world = caff_math::matrix44_id();
+  caff_math::matrix44       view  = caff_math::matrix44_id();
 }
 
 
@@ -60,13 +59,6 @@ void game_loop()
 {
   renderer::reset();
   renderer::clear();
-  
-  simple_shader.set_raw_data("worldMat", caff_math::matrix44_get_data(world), sizeof(caff_math::matrix44));
-  simple_shader.set_raw_data("viewMat",  caff_math::matrix44_get_data(view),  sizeof(caff_math::matrix44));
-  simple_shader.set_raw_data("projMat",  caff_math::matrix44_get_data(proj),  sizeof(caff_math::matrix44));
-  simple_shader.set_texture("diffuseTex", orange_grid_texture);
-  
-  renderer::draw(simple_shader, vert_fmt, obj_cube);
   
   simple_shader.set_raw_data("worldMat", caff_math::matrix44_get_data(world), sizeof(caff_math::matrix44));
   simple_shader.set_raw_data("viewMat",  caff_math::matrix44_get_data(view),  sizeof(caff_math::matrix44));
@@ -128,12 +120,18 @@ int main()
     green_grid_texture.load_data(gre_image, tex_width, tex_height);
     assert(green_grid_texture.is_valid());
     SOIL_free_image_data(gre_image);
+    
+    // Load up mips, with no data.
+    for(auto &mip : dynamic_mips)
+    {
+      mip.load_data(nullptr, 512, 512);
+      assert(mip.is_valid());
+    }
   }
   
   // Init math things
   {
     caff_math::transform camera_transform;
-    caff_math::transform cube_transform;
     
     camera_transform.position = caff_math::vector3_init(-4.f, 1.f, 1.f);
     camera_transform.rotation = caff_math::quaternion_init_with_axis_angle(0, 1, 0, caff_math::quart_tau());
@@ -146,17 +144,11 @@ int main()
     view = caff_math::matrix44_init_lookat(camera_transform.position,
                                                                cam_lookat,
                                                                caff_math::vector3_init(0.f,1.f,0.f));
-
-    world = caff_math::matrix44_id();
   }
   
   // Load a model
   {
-    util::obj_model cube  = util::load_obj(util::get_resource_path() + "assets/models/unit_cube.obj");
     util::obj_model plane = util::load_obj(util::get_resource_path() + "assets/models/unit_plane.obj");
-    
-    util::gl_mesh gl_cube = util::convert_to_open_gl_mesh(cube.meshes.front());
-    obj_cube.load_vertex_buffer(gl_cube.mesh_data);
     
     util::gl_mesh gl_plane = util::convert_to_open_gl_mesh(plane.meshes.front());
     obj_plane.load_vertex_buffer(gl_plane.mesh_data);

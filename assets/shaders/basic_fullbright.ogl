@@ -1,0 +1,71 @@
+
+Full Bright Shader
+------------------
+A general purpose shader with no lighting calculations.
+
+
+[VERTEX]
+
+#version 150 core
+
+// Vertex Format
+in vec3 inPosition;
+in vec2 inTexC;
+in vec3 inNormal;
+
+// WVP matrix.
+uniform mat4 worldMat;
+uniform mat4 viewMat;
+uniform mat4 projMat;
+
+// Texture settings
+uniform vec2 texScale  = vec2(1, 1);
+uniform vec2 texOffset = vec2(0, 0);
+
+// Other settings
+uniform vec3 vertScale = vec3(1, 1, 1);
+uniform vec4 color	   = vec4(1, 1, 1, 0);
+
+// Output Format
+out vec2 texC;
+out vec4 colorMix;
+
+void main()
+{
+// Position vert
+mat4 wvpMat = projMat * viewMat * worldMat;
+vec3 position = vec3(inPosition.x * vertScale.x, inPosition.y * vertScale.y, inPosition.z * vertScale.z);
+
+gl_Position = wvpMat * vec4(position, 1.0);
+
+// Update tex coords with given info.
+float u = (inTexC.x * texScale.x) + texOffset.x;
+float v = (inTexC.y * texScale.y) + texOffset.y;
+texC = vec2(u, v);
+
+colorMix = color;
+}
+
+[/VERTEX]
+
+
+[PIXEL]
+
+#version 150
+
+in vec2 texC;
+in vec4 colorMix;
+
+uniform sampler2D diffuseTex;
+
+out vec4 outColor;
+
+void main()
+{
+vec4 texColor = texture(diffuseTex, texC);
+//outColor = mix(texColor, colorMix, colorMix.w);
+//outColor = vec4(1,1,1,1);
+outColor = texColor;
+}
+
+[/PIXEL]
