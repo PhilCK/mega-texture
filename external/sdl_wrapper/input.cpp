@@ -4,10 +4,9 @@
 namespace sdl {
 
 
-input::input(const sdl::window &window)
+input::input()
 : m_mouse_delta_x(0)
 , m_mouse_delta_y(0)
-//, m_callback_owner(window)
 {
 }
 

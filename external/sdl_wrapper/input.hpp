@@ -10,12 +10,11 @@
 
 namespace sdl {
 
-
 class input final
 {
 public:
 
-  explicit          input(const sdl::window &window);
+  explicit          input();
   
   void              think();
   
@@ -36,9 +35,7 @@ private:
 
   int32_t           m_mouse_delta_x = 0;
   int32_t           m_mouse_delta_y = 0;
-  sdl::sdl_event_callback_ownership m_callback_owner;
   
-
 }; // class
 
 

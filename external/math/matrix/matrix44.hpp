@@ -33,7 +33,7 @@ inline matrix44                   matrix44_init_with_array(const std::array<floa
 inline matrix44                   matrix44_lookat(const vector3 eye_position, const vector3 look_at_position, const vector3 up);
 inline matrix44                   matrix44_projection(const float width, const float height, const float near_plane, const float far_plane, const float fov);
 inline matrix44                   matrix44_orthographic(const float width, const float height, const float depth); // Not impl
-inline matrix44                   matrix44_scale(const float x, const float y, const float z, const matrix44 &b);
+inline matrix44                   matrix44_scale(const float x, const float y, const float z);
 inline matrix44                   matrix44_translate(const matrix44 &lhs, const vector3 move);
 inline matrix44                   matrix44_rotate_around_axis(const vector3 axis, const float radians);
 
@@ -264,16 +264,15 @@ matrix44_multiply(const float lhs, const matrix44 &rhs)
   
   
 matrix44
-matrix44_scale(const float x, const float y, const float z, const matrix44 &rhs)
+matrix44_scale(const float x, const float y, const float z)
 {
-  const detail::internal_mat4 *right = reinterpret_cast<const detail::internal_mat4*>(&rhs);
-  
-  matrix44 return_mat = rhs;
+  matrix44 return_mat;
   detail::internal_mat4 *internal_mat = reinterpret_cast<detail::internal_mat4*>(&return_mat);
   
-  internal_mat->data[0] = x * right->data[0];
-  internal_mat->data[5] = y * right->data[5];
-  internal_mat->data[10] = z * right->data[10];
+  internal_mat->data[0]  = x;
+  internal_mat->data[5]  = y;
+  internal_mat->data[10] = z;
+  internal_mat->data[15] = 1;
   
   return return_mat;
 }
@@ -311,10 +310,12 @@ matrix44_multiply(const matrix44 &lhs, const matrix44 &rhs)
     const uint32_t row = (i / 4) * 4;
     const uint32_t col = (i % 4);
 
-    const vector4 left_vec  = vector4_init(left->data[row + 0],  left->data[row + 1],  left->data[row + 2],  left->data[row + 3]);
-    const vector4 right_vec = vector4_init(right->data[col + 0], right->data[col + 4], right->data[col + 8], right->data[col + 12]);
+    const vector4 row_vec = vector4_init(left->data[row + 0],  left->data[row + 1],  left->data[row + 2],  left->data[row + 3]);
+    const vector4 col_vec = vector4_init(right->data[col + 0], right->data[col + 4], right->data[col + 8], right->data[col + 12]);
 
-    internal_mat->data[i] = vector4_dot(left_vec, right_vec);
+    const float dot = vector4_dot(row_vec, col_vec);
+    
+    internal_mat->data[i] = dot;
   }
 
   return return_mat;

@@ -59,9 +59,6 @@ window::_move(window &this_one, window &other_one)
 
   this_one.m_sdl_window = other_one.m_sdl_window;
   other_one.m_sdl_window = nullptr;
-  
-  this_one.m_hooks = other_one.m_hooks;
-  other_one.m_hooks.clear();
 }
 
 
@@ -311,25 +308,16 @@ window::pump_messages()
     
     
     // Loop through all the hooks.
-    for(auto &hook : m_hooks)
-    {
-      const bool swallow = hook(sdl_event);
-      
-      if(swallow)
-      {
-        break;
-      }
-    }
+//    for(auto &hook : m_hooks)
+//    {
+//      const bool swallow = hook(sdl_event);
+//      
+//      if(swallow)
+//      {
+//        break;
+//      }
+//    }
   }
-}
-
-
-void
-window::hook_into_message_pump(std::function<bool (const SDL_Event &)> message_hook)
-{
-  std::lock_guard<std::mutex> lock(m_lock);
-  
-  m_hooks.emplace_back(message_hook);
 }
 
 

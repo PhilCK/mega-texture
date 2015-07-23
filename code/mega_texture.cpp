@@ -7,6 +7,7 @@
 #include <SOIL/SOIL.h>
 
 #include <assert.h>
+#include <iostream>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -24,9 +25,14 @@ namespace
   const uint32_t number_of_mips         = 5;
   const uint32_t camera_move_speed      = 10.f;
   
+  // World axis.
+  const caff_math::vector3 x_axis = caff_math::vector3_init(1, 0, 0);
+  const caff_math::vector3 y_axis = caff_math::vector3_init(0, 1, 0);
+  const caff_math::vector3 z_axis = caff_math::vector3_init(0, 0, -1);
+  
   // Window/Input etc.
   sdl::window             window(screen_width, screen_height, false, "Mega Texture");
-  const sdl::input        input(window);
+  sdl::input              input;
   const sdl::ogl_context  ogl_context(window);
   
   // Graphics things.
@@ -63,6 +69,23 @@ void generate_mips()
 // Game loop renders, and calls update etc.
 void game_loop()
 {
+  // Check input
+  {
+    const float yaw = input.get_mouse_delta_x();
+    const float pitch = input.get_mouse_delta_y();
+    
+    const caff_math::quaternion rot_yaw = caff_math::quaternion_init_with_axis_angle(0, 1, 0, yaw);
+    const caff_math::quaternion rot_pitch = caff_math::quaternion_init_with_axis_angle(1, 0, 0, pitch);
+    const caff_math::quaternion delta_rot = caff_math::quaternion_multiply(rot_yaw, rot_pitch);
+    camera_transform.rotation = caff_math::quaternion_multiply(camera_transform.rotation, delta_rot);
+    
+    const caff_math::vector3 fwd        = caff_math::vector3_init(0, 0, 1);
+    const caff_math::vector3 cam_fwd    = caff_math::quaternion_rotate_point(camera_transform.rotation, fwd);
+    const caff_math::vector3 cam_lookat = caff_math::vector3_add(camera_transform.position, cam_fwd);
+    
+    view = caff_math::matrix44_lookat(camera_transform.position, cam_lookat, caff_math::vector3_init(0.f,1.f,0.f));
+  }
+  
   renderer::reset();
   renderer::clear();
   
@@ -84,7 +107,18 @@ int main()
 {
   // Tap into error messages (we won't get startup errors because sdl_wrappers are in anon namespace.
   {
+    auto sdl_error_callback = [](const std::string &error_msg)
+    {
+      std::cout << error_msg << std::endl;
+    };
     
+    auto renderer_error_callback = [](const uint32_t id, const std::string &msg)
+    {
+      std::cout << id << " : " << msg << std::endl;
+    };
+    
+    sdl::set_error_callback(sdl_error_callback);
+    renderer::set_log_callback(renderer_error_callback);
   }
   
   // SDL load ok?
@@ -95,6 +129,7 @@ int main()
   
   // Init Render things.
   {
+    input.set_mouse_hold(true);
     renderer::initialize();
     
     const auto resource_path = util::get_resource_path();
@@ -143,17 +178,10 @@ int main()
     camera_transform.position = caff_math::vector3_init(-4.f, 1.f, 1.f);
     camera_transform.rotation = caff_math::quaternion_init_with_axis_angle(0, 1, 0, caff_math::quart_tau());
     
-    const caff_math::vector3 fwd        = caff_math::vector3_init(0, 0, 1);
-    const caff_math::vector3 cam_fwd    = caff_math::quaternion_rotate_point(camera_transform.rotation, fwd);
-    const caff_math::vector3 cam_lookat = caff_math::vector3_add(camera_transform.position, cam_fwd);
-    
     // Mats
-    view = caff_math::matrix44_lookat(camera_transform.position,
-                                                               cam_lookat,
-                                                               caff_math::vector3_init(0.f,1.f,0.f));
-    world = caff_math::matrix44_scale(10, 10, 10, world);
+
+    world = caff_math::matrix44_scale(10, 10, 10);
     
-    const caff_math::vector3 y_axis = caff_math::vector3_init(0, 1, 0);
     auto rot = caff_math::matrix44_rotate_around_axis(y_axis, caff_math::pi() / 3.f);
     
     world = caff_math::matrix44_multiply(world, rot);

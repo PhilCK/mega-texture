@@ -6,7 +6,6 @@ namespace sdl {
 
 
 class window;
-class sdl_event_callback_ownership;
 class input;
 class ogl_context;
 class mixer;
