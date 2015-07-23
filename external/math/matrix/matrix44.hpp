@@ -342,24 +342,24 @@ matrix44_rotate_around_axis(const vector3 axis, const float radians)
   matrix44 rotation;
   detail::internal_mat4 *rotate_me = reinterpret_cast<detail::internal_mat4*>(&rotation);
   
-  const float cos_theta = caff_math::cos(radians);
+  const float sin_theta           = caff_math::sin(radians);
+  const float cos_theta           = caff_math::cos(radians);
   const float one_minus_cos_theta = 1.f - cos_theta;
-  const float sin_theta = caff_math::sin(radians);
   
   const float x = vector3_get_x(axis);
   const float y = vector3_get_y(axis);
   const float z = vector3_get_z(axis);
   
-  rotate_me->data[0] = cos_theta + ((x * x) * one_minus_cos_theta);
-  rotate_me->data[1] = ((x * y) * one_minus_cos_theta) - (z * sin_theta);
-  rotate_me->data[2] = ((x * z) * one_minus_cos_theta) + (y * sin_theta);
+  rotate_me->data[0]  = cos_theta + ((x * x) * one_minus_cos_theta);
+  rotate_me->data[1]  = ((x * y) * one_minus_cos_theta) - (z * sin_theta);
+  rotate_me->data[2]  = ((x * z) * one_minus_cos_theta) + (y * sin_theta);
   
-  rotate_me->data[4] = ((y * x) * one_minus_cos_theta) + (z * sin_theta);
-  rotate_me->data[5] = cos_theta + ((y * y) * one_minus_cos_theta);
-  rotate_me->data[6] = ((y * z) * one_minus_cos_theta) - (x * sin_theta);
+  rotate_me->data[4]  = ((y * x) * one_minus_cos_theta) + (z * sin_theta);
+  rotate_me->data[5]  = cos_theta + ((y * y) * one_minus_cos_theta);
+  rotate_me->data[6]  = ((y * z) * one_minus_cos_theta) - (x * sin_theta);
 
-  rotate_me->data[8] = ((z * x) * one_minus_cos_theta) - (y * sin_theta);
-  rotate_me->data[9] = ((z * y) * one_minus_cos_theta) + (x * sin_theta);
+  rotate_me->data[8]  = ((z * x) * one_minus_cos_theta) - (y * sin_theta);
+  rotate_me->data[9]  = ((z * y) * one_minus_cos_theta) + (x * sin_theta);
   rotate_me->data[10] = cos_theta + ((z * z) * one_minus_cos_theta);
   
   rotate_me->data[15] = 1.f;
