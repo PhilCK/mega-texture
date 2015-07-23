@@ -8,6 +8,9 @@
 
 #include <assert.h>
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+
 
 // In an effort to keep this demo consince I've just dumped the varables here.
 // Needless to say you don't want todo that for bigger projects.
@@ -35,7 +38,7 @@ namespace
   renderer::vertex_buffer                       obj_plane;
   
   // Math things
-  const caff_math::matrix44 proj  = caff_math::matrix44_init_projection(screen_width, screen_height, 0.1f, 100.f, caff_math::pi() * 0.25f);
+  const caff_math::matrix44 proj  = caff_math::matrix44_projection(screen_width, screen_height, 0.1f, 100.f, caff_math::pi() * 0.25f);
   caff_math::matrix44       world = caff_math::matrix44_id(); // kill this when transform working better.
   caff_math::matrix44       view  = caff_math::matrix44_id(); // kill this when transform working better.
   
@@ -140,14 +143,21 @@ int main()
     camera_transform.position = caff_math::vector3_init(-4.f, 1.f, 1.f);
     camera_transform.rotation = caff_math::quaternion_init_with_axis_angle(0, 1, 0, caff_math::quart_tau());
     
-    const caff_math::vector3 fwd = caff_math::vector3_init(0, 0, 1);
-    const caff_math::vector3 cam_fwd = caff_math::quaternion_rotate_point(camera_transform.rotation, fwd);
+    const caff_math::vector3 fwd        = caff_math::vector3_init(0, 0, 1);
+    const caff_math::vector3 cam_fwd    = caff_math::quaternion_rotate_point(camera_transform.rotation, fwd);
     const caff_math::vector3 cam_lookat = caff_math::vector3_add(camera_transform.position, cam_fwd);
-  
+    
     // Mats
-    view = caff_math::matrix44_init_lookat(camera_transform.position,
+    view = caff_math::matrix44_lookat(camera_transform.position,
                                                                cam_lookat,
                                                                caff_math::vector3_init(0.f,1.f,0.f));
+    world = caff_math::matrix44_scale(10, 10, 10, world);
+    
+    const caff_math::vector3 y_axis = caff_math::vector3_init(0, 1, 0);
+    auto rot = caff_math::matrix44_rotate_around_axis(y_axis, caff_math::pi() / 3.f);
+    
+    world = caff_math::matrix44_multiply(world, rot);
+    
   }
   
   // Load a model

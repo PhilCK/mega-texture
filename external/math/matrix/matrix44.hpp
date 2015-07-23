@@ -29,19 +29,20 @@ inline matrix44                   matrix44_init(const float x);
 inline matrix44                   matrix44_init_with_array(const float arr[]);
 inline matrix44                   matrix44_init_with_array(const std::array<float, 16> &array);
 
-// Generate special matrices
-inline matrix44                   matrix44_init_lookat(const vector3 eye_position, const vector3 look_at_position, const vector3 up);
-inline matrix44                   matrix44_init_projection(const float width, const float height, const float near_plane, const float far_plane, const float fov);
-inline matrix44                   matrix44_init_orthographic(const float width, const float height, const float depth);
+// Generate transformation matrices.
+inline matrix44                   matrix44_lookat(const vector3 eye_position, const vector3 look_at_position, const vector3 up);
+inline matrix44                   matrix44_projection(const float width, const float height, const float near_plane, const float far_plane, const float fov);
+inline matrix44                   matrix44_orthographic(const float width, const float height, const float depth); // Not impl
+inline matrix44                   matrix44_scale(const float x, const float y, const float z, const matrix44 &b);
+inline matrix44                   matrix44_translate(const matrix44 &lhs, const vector3 move);
+inline matrix44                   matrix44_rotate_around_axis(const vector3 axis, const float radians);
 
 // Operations
 inline matrix44                   matrix44_add(const matrix44 &lhs, const matrix44 &rhs);
 inline matrix44                   matrix44_subtract(const matrix44 &lhs, const matrix44 &rhs);
-inline matrix44                   matrix44_scale(const float scale, const matrix44 &b);
+inline matrix44                   matrix44_multiply(const float val, const matrix44 &b);
 inline vector4                    matrix44_multiply(const vector4 vector, const matrix44 &b);
 inline matrix44                   matrix44_multiply(const matrix44 &lhs, const matrix44 &rhs);
-inline matrix44                   matrix44_translate(const matrix44 &lhs, const vector3 move);
-inline matrix44                   matrix44_rotate(const matrix44 &lhs, const vector3 euler);
 
 // Transform matrices into other forms
 inline matrix44                   matrix44_get_transpose(const matrix44 &a);
@@ -140,7 +141,7 @@ matrix44_init_with_array(const std::array<float, 16> &array)
 
 
 matrix44
-matrix44_init_lookat(const vector3 eye_position, const vector3 look_at_position, const vector3 up)
+matrix44_lookat(const vector3 eye_position, const vector3 look_at_position, const vector3 up)
 {
   const vector3 z_axis = vector3_normalize(vector3_subtract(look_at_position, eye_position));
   const vector3 x_axis = vector3_normalize(vector3_cross(z_axis, up));
@@ -174,7 +175,7 @@ matrix44_init_lookat(const vector3 eye_position, const vector3 look_at_position,
 
 
 matrix44
-matrix44_init_projection(const float width, const float height, const float near_plane, const float far_plane, const float fov)
+matrix44_projection(const float width, const float height, const float near_plane, const float far_plane, const float fov)
 {
   const float aspect_ratio = width / height;
   const float one_over_tan_half_fov = 1.f / caffmath::tan(fov * 0.5f);
@@ -210,7 +211,7 @@ matrix44_init_projection(const float width, const float height, const float near
 
 
 matrix44
-matrix44_init_orthographic(const float width, const float height, const float depth)
+matrix44_orthographic(const float width, const float height, const float depth)
 {
   return matrix44_zero();
 }
@@ -254,18 +255,26 @@ matrix44_subtract(const matrix44 &lhs, const matrix44 &rhs)
 
 
 matrix44
-matrix44_scale(const float lhs, const matrix44 &rhs)
+matrix44_multiply(const float lhs, const matrix44 &rhs)
+{
+  matrix44 multiply_mat = matrix44_init(lhs);
+  
+  return matrix44_multiply(multiply_mat, rhs);
+}
+  
+  
+matrix44
+matrix44_scale(const float x, const float y, const float z, const matrix44 &rhs)
 {
   const detail::internal_mat4 *right = reinterpret_cast<const detail::internal_mat4*>(&rhs);
-
-  matrix44 return_mat; 
+  
+  matrix44 return_mat = rhs;
   detail::internal_mat4 *internal_mat = reinterpret_cast<detail::internal_mat4*>(&return_mat);
-
-  for(int i = 0; i < 16; ++i)
-  {
-    internal_mat->data[i] = lhs * right->data[0];
-  }
-
+  
+  internal_mat->data[0] = x * right->data[0];
+  internal_mat->data[5] = y * right->data[5];
+  internal_mat->data[10] = z * right->data[10];
+  
   return return_mat;
 }
 
@@ -298,11 +307,11 @@ matrix44_multiply(const matrix44 &lhs, const matrix44 &rhs)
 
   for(uint32_t i = 0; i < 16; ++i)
   {
-    //[0,1,2,3] x [0,4,8,12]
-    const uint32_t row = i / 4;
-    const uint32_t col = i % 4;
+    // Starting index for data.
+    const uint32_t row = (i / 4) * 4;
+    const uint32_t col = (i % 4);
 
-    const vector4 left_vec = vector4_init(left->data[row + 0], left->data[row + 1], left->data[row + 2], left->data[row + 3]);
+    const vector4 left_vec  = vector4_init(left->data[row + 0],  left->data[row + 1],  left->data[row + 2],  left->data[row + 3]);
     const vector4 right_vec = vector4_init(right->data[col + 0], right->data[col + 4], right->data[col + 8], right->data[col + 12]);
 
     internal_mat->data[i] = vector4_dot(left_vec, right_vec);
@@ -325,12 +334,37 @@ matrix44_translate(const matrix44 &mat, const vector3 move)
 
   return copy;
 }
-
-
+  
+  
 matrix44
-matrix44_rotate(const matrix44 &a, const vector3 euler)
+matrix44_rotate_around_axis(const vector3 axis, const float radians)
 {
-  return matrix44();
+  matrix44 rotation;
+  detail::internal_mat4 *rotate_me = reinterpret_cast<detail::internal_mat4*>(&rotation);
+  
+  const float cos_theta = caff_math::cos(radians);
+  const float one_minus_cos_theta = 1.f - cos_theta;
+  const float sin_theta = caff_math::sin(radians);
+  
+  const float x = vector3_get_x(axis);
+  const float y = vector3_get_y(axis);
+  const float z = vector3_get_z(axis);
+  
+  rotate_me->data[0] = cos_theta + ((x * x) * one_minus_cos_theta);
+  rotate_me->data[1] = ((x * y) * one_minus_cos_theta) - (z * sin_theta);
+  rotate_me->data[2] = ((x * z) * one_minus_cos_theta) + (y * sin_theta);
+  
+  rotate_me->data[4] = ((y * x) * one_minus_cos_theta) + (z * sin_theta);
+  rotate_me->data[5] = cos_theta + ((y * y) * one_minus_cos_theta);
+  rotate_me->data[6] = ((y * z) * one_minus_cos_theta) - (x * sin_theta);
+
+  rotate_me->data[8] = ((z * x) * one_minus_cos_theta) - (y * sin_theta);
+  rotate_me->data[9] = ((z * y) * one_minus_cos_theta) + (x * sin_theta);
+  rotate_me->data[10] = cos_theta + ((z * z) * one_minus_cos_theta);
+  
+  rotate_me->data[15] = 1.f;
+  
+  return rotation;
 }
 
 
