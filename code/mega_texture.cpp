@@ -28,7 +28,7 @@ namespace
   // World axis.
   const caff_math::vector3 x_axis = caff_math::vector3_init(1, 0, 0);
   const caff_math::vector3 y_axis = caff_math::vector3_init(0, 1, 0);
-  const caff_math::vector3 z_axis = caff_math::vector3_init(0, 0, -1);
+  const caff_math::vector3 z_axis = caff_math::vector3_init(0, 0, 1);
   
   // Window/Input etc.
   sdl::window             window(screen_width, screen_height, false, "Mega Texture");
@@ -74,19 +74,57 @@ void game_loop()
     const float yaw = -input.get_mouse_delta_x() * 0.002f;
     const float pitch = +input.get_mouse_delta_y() * 0.002f;
     
-    if(input.is_key_down(SDLK_TAB))
-    {
-      std::cout << "doop";
-    }
-    
     const caff_math::quaternion rot_yaw = caff_math::quaternion_init_with_axis_angle(0, 1, 0, yaw);
     const caff_math::quaternion rot_pitch = caff_math::quaternion_init_with_axis_angle(1, 0, 0, pitch);
     const caff_math::quaternion delta_rot = caff_math::quaternion_multiply(rot_yaw, rot_pitch);
     camera_transform.rotation = caff_math::quaternion_multiply(camera_transform.rotation, delta_rot);
     
     const caff_math::vector3 fwd        = caff_math::vector3_init(0, 0, 1);
+    
+    float fwd_distance = 0;
+    float right_distance = 0;
+    
+    if(input.is_key_down(SDLK_w))
+    {
+      fwd_distance += 0.00002f;
+    }
+    
+    if(input.is_key_down(SDLK_s))
+    {
+      fwd_distance -= 0.00002f;
+    }
+    
+    if(input.is_key_down(SDLK_a))
+    {
+      right_distance -= 0.0000002f;
+    }
+
+    if(input.is_key_down(SDLK_d))
+    {
+      right_distance += 0.0000002f;
+    }
+    
+    
+    //const caff_math::vector3 move_fwd = caff_math::vector3_init(0, 0, fwd_distance);
+    const caff_math::vector3 move_fwd_axis = caff_math::quaternion_rotate_point(camera_transform.rotation, z_axis);
+    const caff_math::vector3 move_fwd_final = caff_math::vector3_scale(move_fwd_axis, fwd_distance);
+    
+    //const caff_math::vector3 move_right = caff_math::vector3_init(right_distance, 0, 0);
+    const caff_math::vector3 move_rght_axis = caff_math::quaternion_rotate_point(camera_transform.rotation, x_axis);
+    const caff_math::vector3 move_right_final = caff_math::vector3_scale(move_rght_axis, right_distance);
+    
+    const caff_math::vector3 movement = caff_math::vector3_init(right_distance, 0, fwd_distance);
+    const caff_math::vector3 move_rot = caff_math::quaternion_rotate_point(camera_transform.rotation, movement);
+    const caff_math::vector3 move_final = caff_math::vector3_add(camera_transform.position, move_rot);
+    
+    const caff_math::vector3 move = caff_math::vector3_add(move_fwd_final, move_right_final);
+    
+    if(caff_math::vector3_length(move) > 0.f)
+    camera_transform.position = caff_math::vector3_add(camera_transform.position, move_final);
+    
     const caff_math::vector3 cam_fwd    = caff_math::quaternion_rotate_point(camera_transform.rotation, fwd);
     const caff_math::vector3 cam_lookat = caff_math::vector3_add(camera_transform.position, cam_fwd);
+    
     
     view = caff_math::matrix44_lookat(camera_transform.position, cam_lookat, caff_math::vector3_init(0.f,1.f,0.f));
   }
