@@ -6,6 +6,8 @@
 #include "sdl_fwd.hpp"
 #include "window.hpp"
 #include <stdint.h>
+#include <functional>
+#include <map>
 
 
 namespace sdl {
@@ -15,26 +17,35 @@ class input final
 public:
 
   explicit          input();
+                    ~input();
   
   void              think();
   
-  int32_t           get_mouse_delta_x() const;
-  int32_t           get_mouse_delta_y() const;
+  inline int32_t    get_mouse_delta_x() const { return m_mouse_delta_x; }
+  inline int32_t    get_mouse_delta_y() const { return m_mouse_delta_y; }
   int32_t           get_mouse_x() const;
   int32_t           get_mouse_y() const;
   
   bool              set_mouse_hold(const bool set);
   bool              is_mouse_held() const;
   
-  bool              set_text_stream(const bool set);
-  bool              is_text_stream_enabled() const;
+//  bool              set_text_stream(const bool set);
+//  bool              is_text_stream_enabled() const;
   
-  bool              process_sdl_message(const SDL_Event &event);
+private:
+  
+  bool              _process_message(const SDL_Event &event);
   
 private:
 
   int32_t           m_mouse_delta_x = 0;
   int32_t           m_mouse_delta_y = 0;
+  
+  enum class key_state {UP, DOWN,};
+  std::map<uint32_t, key_state> m_key_states;
+  
+  std::function<bool(const SDL_Event&)> m_message_callback = std::bind(&input::_process_message, this, std::placeholders::_1);
+
   
 }; // class
 

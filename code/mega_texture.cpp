@@ -71,8 +71,8 @@ void game_loop()
 {
   // Check input
   {
-    const float yaw = input.get_mouse_delta_x();
-    const float pitch = input.get_mouse_delta_y();
+    const float yaw = -input.get_mouse_delta_x() * 0.002f;
+    const float pitch = +input.get_mouse_delta_y() * 0.002f;
     
     const caff_math::quaternion rot_yaw = caff_math::quaternion_init_with_axis_angle(0, 1, 0, yaw);
     const caff_math::quaternion rot_pitch = caff_math::quaternion_init_with_axis_angle(1, 0, 0, pitch);
@@ -99,7 +99,10 @@ void game_loop()
   // SDL Things
   window.flip_buffer();
   
-  window.pump_messages();
+  //window.pump_messages();
+  window.think();
+  input.think();
+  sdl::message_pump();
 }
 
 // Main pretty much just initializes the data and starts the game loop.

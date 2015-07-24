@@ -44,23 +44,24 @@ public:
   bool                set_title(const std::string &str);
   std::string         get_title() const;
 
+  void                think() {} // constant accross the other modules.
   void                flip_buffer();
-  void                pump_messages();
 
-  inline bool         wants_to_quit() const { return m_quit_requested; }
-  
-  inline SDL_Window*  get_sdl_window() const { return m_sdl_window; }
-  inline bool         has_valid_context() const { return m_sdl_window != nullptr; }
+  inline bool         wants_to_quit() const       { return m_quit_requested;        }
+  inline SDL_Window*  get_sdl_window() const      { return m_sdl_window;            }
+  inline bool         has_valid_context() const   { return m_sdl_window != nullptr; }
 
 private:
 
+  bool                _process_message(const SDL_Event &event);
   void                _move(window &this_one, window &other_one);
 
 private:
   
-  SDL_Window          *m_sdl_window    = nullptr;
-  bool                m_quit_requested = false;
-  mutable std::mutex  m_lock;
+  SDL_Window                            *m_sdl_window      = nullptr;
+  bool                                  m_quit_requested   = false;
+  std::function<bool(const SDL_Event&)> m_message_callback = std::bind(&window::_process_message, this, std::placeholders::_1);
+  mutable std::mutex                    m_lock;
 
 }; // class
 

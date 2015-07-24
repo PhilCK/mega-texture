@@ -25,6 +25,8 @@ public:
   ogl_context&      operator=(ogl_context&& other);
 
   inline bool       has_valid_context() const { return m_sdl_gl_context != nullptr; }
+  
+  void              think() {} // constant accross the other modules.  
 
 private:
 

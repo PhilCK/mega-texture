@@ -5,6 +5,7 @@
 #include "input.hpp"
 #include "ogl_context.hpp"
 #include "mixer.hpp"
+#include "message_pump.hpp"
 #include "sdl_common.hpp"
 #include "sdl_fwd.hpp"
 

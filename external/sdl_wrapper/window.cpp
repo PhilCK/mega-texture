@@ -1,11 +1,12 @@
 #include "window.hpp"
+#include "message_pump.hpp"
 #include <assert.h>
 #include <iostream>
 
 
 namespace
 {
-  int32_t fullscreen_mode = SDL_WINDOW_FULLSCREEN_DESKTOP; // rather than SDL_WINDOW_FULLSCREEN
+  const int32_t fullscreen_mode = SDL_WINDOW_FULLSCREEN_DESKTOP; // rather than SDL_WINDOW_FULLSCREEN
 }
 
 
@@ -14,6 +15,10 @@ namespace sdl {
 
 window::window(const uint32_t width, const uint32_t height, const bool is_fullscreen, const std::string &title)
 {
+  // Reg for callbacks
+  sdl::message_callback_register(m_message_callback);
+  
+  // Init window
   const Uint32 init_flags = SDL_INIT_EVERYTHING;
 
 	if(SDL_Init(init_flags) != 0)
@@ -43,6 +48,11 @@ window::window(const uint32_t width, const uint32_t height, const bool is_fullsc
 
 window::~window()
 {
+  if(m_message_callback)
+  {
+    sdl::message_callback_unregister(m_message_callback);
+  }
+  
   if(m_sdl_window)
   {
     SDL_DestroyWindow(m_sdl_window);
@@ -200,6 +210,7 @@ void
 window::flip_buffer()
 {
   SDL_GL_SwapWindow(m_sdl_window);
+  sdl::log_debug_error_check();
 }
 
 
@@ -215,99 +226,95 @@ window::get_title() const
 }
 
 
-void
-window::pump_messages()
+bool
+window::_process_message(const SDL_Event &sdl_event)
 {
   std::lock_guard<std::mutex> lock(m_lock);
 
-  SDL_Event sdl_event;
-
-  while (SDL_PollEvent(&sdl_event))
+  // Check for quit message.
+  if (sdl_event.type == SDL_QUIT)
   {
-    // Check for quit message.
-    if (sdl_event.type == SDL_QUIT)
-    {
-      m_quit_requested = true;
-    }
+    m_quit_requested = true;
+  }
 
-    if (sdl_event.type == SDL_WINDOWEVENT)
+  if (sdl_event.type == SDL_WINDOWEVENT)
+  {
+    switch (sdl_event.window.event)
     {
-      switch (sdl_event.window.event)
+      case(SDL_WINDOWEVENT_SHOWN): // When shown for the first time.
       {
-        case(SDL_WINDOWEVENT_SHOWN): // When shown for the first time.
-        {
-          break;
-        }
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_HIDDEN):
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_HIDDEN):
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_EXPOSED): // Called from start and also when window comes back from minimized. 
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_EXPOSED): // Called from start and also when window comes back from minimized. 
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_MOVED):
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_MOVED):
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_SIZE_CHANGED):
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_SIZE_CHANGED):
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_RESIZED): // Called when size window dragged or max button pressed. and sometimes when SetWindowSize() is called.
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_RESIZED): // Called when size window dragged or max button pressed. and sometimes when SetWindowSize() is called.
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_MAXIMIZED):
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_MAXIMIZED):
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_MINIMIZED):
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_MINIMIZED):
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_RESTORED): // When minimised and brought back onto the screen.
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_RESTORED): // When minimised and brought back onto the screen.
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_ENTER): // When mouse pointer hovers over. Even if not in focus.
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_ENTER): // When mouse pointer hovers over. Even if not in focus.
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_LEAVE): // When mouse pointer leaves the window. Even if not in focus.
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_LEAVE): // When mouse pointer leaves the window. Even if not in focus.
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_FOCUS_GAINED):
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_FOCUS_GAINED):
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_FOCUS_LOST):
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_FOCUS_LOST):
+      {
+        break;
+      }
 
-        case(SDL_WINDOWEVENT_CLOSE): // When x hit.
-        {
-          break;
-        }
+      case(SDL_WINDOWEVENT_CLOSE): // When x hit.
+      {
+        break;
       }
     }
-    
-    
-    // Loop through all the hooks.
+  }
+  
+  
+  // Loop through all the hooks.
 //    for(auto &hook : m_hooks)
 //    {
 //      const bool swallow = hook(sdl_event);
@@ -317,7 +324,8 @@ window::pump_messages()
 //        break;
 //      }
 //    }
-  }
+  
+  return false;
 }
 
 
