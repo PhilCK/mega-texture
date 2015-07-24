@@ -27,8 +27,7 @@ uniform vec3 vertScale = vec3(1, 1, 1);
 uniform vec4 color	   = vec4(1, 1, 1, 0);
 
 // Output Format
-out vec2 texC;
-out vec4 colorMix;
+out vec2 frag_tex_coords;
 
 void main()
 {
@@ -41,9 +40,7 @@ gl_Position = wvpMat * vec4(position, 1.0);
 // Update tex coords with given info.
 float u = (inTexC.x * texScale.x) + texOffset.x;
 float v = (inTexC.y * texScale.y) + texOffset.y;
-texC = vec2(u, v);
-
-colorMix = color;
+frag_tex_coords = vec2(u, v);
 }
 
 [/VERTEX]
@@ -53,19 +50,30 @@ colorMix = color;
 
 #version 150
 
-in vec2 texC;
-in vec4 colorMix;
+in vec2 frag_tex_coords;
 
-uniform sampler2D diffuseTex;
+uniform sampler2D mip01;
+uniform sampler2D mip02;
 
-out vec4 outColor;
+out vec4 frag_out_color;
 
 void main()
 {
-vec4 texColor = texture(diffuseTex, texC);
-//outColor = mix(texColor, colorMix, colorMix.w);
-//outColor = vec4(1,1,1,1);
-outColor = texColor;
+  vec4 tex_color;
+  int mips = 2;
+
+  if(frag_tex_coords.x < 0.5 && frag_tex_coords.y < 0.5)
+  {
+    vec2 uv_adjusted = vec2(frag_tex_coords.x * 2, frag_tex_coords.y * 2);
+    tex_color = texture(mip02, uv_adjusted);
+  }
+  else
+  {
+    tex_color = texture(mip01, frag_tex_coords);
+  }
+
+
+  frag_out_color = tex_color;
 }
 
 [/PIXEL]

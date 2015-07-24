@@ -206,8 +206,12 @@ vector3_add(const vector3 a, const vector3 b)
 {
   const detail::internal_vec3 *vec_a = reinterpret_cast<const detail::internal_vec3*>(&a);
   const detail::internal_vec3 *vec_b = reinterpret_cast<const detail::internal_vec3*>(&b);
+  
+  const float x = vec_a->x + vec_b->x;
+  const float y = vec_a->y + vec_b->y;
+  const float z = vec_a->z + vec_b->z;
 
-  return vector3_init(vec_a->x + vec_b->x, vec_a->y + vec_b->y, vec_a->z + vec_b->z);
+  return vector3_init(x, y, z);
 }
 
 
