@@ -32,6 +32,9 @@ public:
 //  bool              set_text_stream(const bool set);
 //  bool              is_text_stream_enabled() const;
   
+  bool              is_key_down(uint32_t key_id);
+  bool              is_key_down_on_frame(uint32_t key_id);
+  
 private:
   
   bool              _process_message(const SDL_Event &event);
@@ -43,6 +46,7 @@ private:
   
   enum class key_state {UP, DOWN,};
   std::map<uint32_t, key_state> m_key_states;
+  std::map<uint32_t, key_state> m_frame_key_states;
   
   std::function<bool(const SDL_Event&)> m_message_callback = std::bind(&input::_process_message, this, std::placeholders::_1);
 

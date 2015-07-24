@@ -25,6 +25,7 @@ input::think()
   // Reset
   m_mouse_delta_x = 0;
   m_mouse_delta_y = 0;
+  m_frame_key_states.clear();
 }
 
 
@@ -46,6 +47,30 @@ input::get_mouse_y() const
   
   return y;
 }
+  
+  
+bool
+input::is_key_down(uint32_t key_id)
+{
+  if(m_key_states.count(key_id) && m_key_states[key_id] == key_state::DOWN)
+  {
+    return true;
+  }
+  
+  return false;
+}
+
+
+bool
+input::is_key_down_on_frame(uint32_t key_id)
+{
+  if(m_frame_key_states.count(key_id) && m_key_states[key_id] == key_state::DOWN)
+  {
+    return true;
+  }
+  
+  return false;
+}
 
 
 bool
@@ -54,7 +79,7 @@ input::_process_message(const SDL_Event &event)
   auto update_key = [&](const uint32_t id, const key_state state)
   {
     m_key_states[id]       = state;
-    //m_frame_key_states[id] = state;
+    m_frame_key_states[id] = state;
   };
 
   switch (event.type)
