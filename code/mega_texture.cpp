@@ -56,11 +56,44 @@ namespace
 
 void camera_control();
 
+#include <fstream>
+char* get_data()
+{
+  const uint32_t size_of_data = 512 * 512 * 4;
+  static char data[size_of_data];
+  
+  const auto path = util::get_resource_path() + "assets/textures/mega_texture_0.bmp";
+  
+  std::ifstream fin(path, std::ios::binary | std::ios::in);
+  
+  if(fin.good())
+  {
+    const char bmp_header_offset = 54;
+    const char size_of_sample = 6;
+    
+    // Each row in destination texture.
+    for(int i = 0; i < 512; ++i)
+    {
+      const char row = 1;
+      const char col = 1;
+      
+      const char size_of_data_to_read = 4;
+      
+      fin.seekg(i * 512 * 4);
+      fin.read(&data[i * 512 * 4], (512 * 4));
+    }
+  }
+  
+  //std::istringstream(std::string(buffer, buffer+40));
+  
+  return &data[0];
+}
+
 
 // We build the mips on the threads.
 void thread_task()
 {
-  
+
 }
 
 
@@ -151,7 +184,7 @@ int main()
     
     const std::string orange_tex = texture_filepath + "dev_colored_squares_512.png";
     uint8_t *or_image = SOIL_load_image(orange_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
-    orange_grid_texture.load_data(or_image, tex_width, tex_height);
+    orange_grid_texture.load_data(get_data(), tex_width, tex_height);
     assert(orange_grid_texture.is_valid());
     SOIL_free_image_data(or_image);
     
