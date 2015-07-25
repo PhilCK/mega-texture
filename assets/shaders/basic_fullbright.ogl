@@ -52,24 +52,55 @@ frag_tex_coords = vec2(u, v);
 
 in vec2 frag_tex_coords;
 
-uniform sampler2D mip01;
-uniform sampler2D mip02;
+uniform sampler2D mip0;
+uniform vec2 mip0_position = vec2(0.0,0.5);
+
+uniform sampler2D mip1;
+uniform vec2 mip1_position = vec2(0.0,0.5);
+
+uniform sampler2D mip2;
+uniform vec2 mip2_position = vec2(0.0,0.5);
+
+uniform sampler2D mip3;
+uniform vec2 mip3_position = vec2(0.0,0.5);
 
 out vec4 frag_out_color;
 
 void main()
 {
   vec4 tex_color;
-  int mips = 2;
 
-  if(frag_tex_coords.x < 0.5 && frag_tex_coords.y < 0.5)
+  // These are constant.
+  float number_of_mips = 4;
+  float mip0_size = 1.0 / pow(2.0, 0);
+  float mip1_size = 1.0 / pow(2.0, 1);
+  float mip2_size = 1.0 / pow(2.0, 2);
+  float mip3_size = 1.0 / pow(2.0, 3);
+
+
+  // Highest mip (more detailed) to lowest (less detailed).
+  // I've not tested which way around is better. I suspect it doens't make much difference.
+
+  // High to low.
+  // Simple AABB to check if we need to sample inside.
+  if(length(mip3_position - frag_tex_coords) < (0.125 / 2))
   {
-    vec2 uv_adjusted = vec2(frag_tex_coords.x * 2, frag_tex_coords.y * 2);
-    tex_color = texture(mip02, uv_adjusted);
+    vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 8 + 0.5, (mip3_position - frag_tex_coords).y * 8 + 0.5);
+    tex_color = texture(mip3, uv_adjusted);
+  }
+  else if(length(mip2_position - frag_tex_coords) < (0.25 / 2))
+  {
+    vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 4 + 0.5, (mip3_position - frag_tex_coords).y * 4 + 0.5);
+    tex_color = texture(mip2, uv_adjusted);
+  }
+  else if(length(mip1_position - frag_tex_coords) < (0.5 /2 ))
+  {
+    vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 2 + 0.5, (mip3_position - frag_tex_coords).y * 2 + 0.5);
+    tex_color = texture(mip1, uv_adjusted);
   }
   else
   {
-    tex_color = texture(mip01, frag_tex_coords);
+    tex_color = texture(mip0, frag_tex_coords);
   }
 
 

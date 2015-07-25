@@ -23,7 +23,7 @@ namespace
   const uint32_t mega_texture_size      = 32768;
   const uint32_t mega_texture_mip_size  = 512;
   const uint32_t number_of_mips         = 5;
-  const float camera_move_speed         = 0.3f;
+  const float camera_move_speed         = 3.3f;
   const float mouse_move_speed          = 0.002f;
   
   // World axis.
@@ -42,12 +42,13 @@ namespace
   std::array<renderer::texture, number_of_mips> dynamic_mips;
   renderer::texture                             green_grid_texture;
   renderer::texture                             orange_grid_texture;
+  renderer::texture                             red_grid_texture;
   renderer::vertex_buffer                       obj_plane;
   
   // Math things
   caff_math::transform      camera_transform; // position of the camera.
   
-  const caff_math::matrix44 proj  = caff_math::matrix44_projection(screen_width, screen_height, 0.1f, 2000.f, caff_math::pi() * 0.25f);
+  const caff_math::matrix44 proj  = caff_math::matrix44_projection(screen_width, screen_height, 0.1f, 200000.f, caff_math::pi() * 0.25f);
   caff_math::matrix44       world = caff_math::matrix44_id(); // kill this when transform working better.
   caff_math::matrix44       view  = caff_math::matrix44_lookat(camera_transform.position, z_axis, y_axis);
 }
@@ -81,10 +82,10 @@ void game_loop()
   simple_shader.set_raw_data("worldMat", caff_math::matrix44_get_data(world), sizeof(caff_math::matrix44));
   simple_shader.set_raw_data("viewMat",  caff_math::matrix44_get_data(view),  sizeof(caff_math::matrix44));
   simple_shader.set_raw_data("projMat",  caff_math::matrix44_get_data(proj),  sizeof(caff_math::matrix44));
-  simple_shader.set_texture("mip01", green_grid_texture);
-  simple_shader.set_texture("mip02", orange_grid_texture);
-//  simple_shader.set_texture("mip03", green_grid_texture);
-//  simple_shader.set_texture("mip04", orange_grid_texture);
+  simple_shader.set_texture("mip0", red_grid_texture);
+  simple_shader.set_texture("mip1", orange_grid_texture);
+  simple_shader.set_texture("mip2", green_grid_texture);
+  simple_shader.set_texture("mip3", orange_grid_texture);
 //  simple_shader.set_texture("mip05", green_grid_texture);
   
   renderer::draw(simple_shader, vert_fmt, obj_plane);
@@ -148,7 +149,7 @@ int main()
     int32_t tex_height = 0;
     int32_t tex_width = 0;
     
-    const std::string orange_tex = texture_filepath + "dev_grid_orange_512.png";
+    const std::string orange_tex = texture_filepath + "dev_colored_squares_512.png";
     uint8_t *or_image = SOIL_load_image(orange_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
     orange_grid_texture.load_data(or_image, tex_width, tex_height);
     assert(orange_grid_texture.is_valid());
@@ -159,6 +160,12 @@ int main()
     green_grid_texture.load_data(gre_image, tex_width, tex_height);
     assert(green_grid_texture.is_valid());
     SOIL_free_image_data(gre_image);
+
+    const std::string red_tex = texture_filepath + "dev_grid_red_512.png";
+    uint8_t *red_image = SOIL_load_image(red_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
+    red_grid_texture.load_data(red_image, tex_width, tex_height);
+    assert(red_grid_texture.is_valid());
+    SOIL_free_image_data(red_image);
     
     // Load up mips, with no data.
     for(auto &mip : dynamic_mips)
@@ -174,7 +181,7 @@ int main()
     camera_transform.rotation = caff_math::quaternion_init_with_axis_angle(0, 1, 0, caff_math::quart_tau());
     
     // Mats
-    world = caff_math::matrix44_scale(100, 100, 100);
+    world = caff_math::matrix44_scale(10000, 10000, 10000);
   }
   
   // Load a model
