@@ -53,16 +53,16 @@ frag_tex_coords = vec2(u, v);
 in vec2 frag_tex_coords;
 
 uniform sampler2D mip0;
-uniform vec2 mip0_position = vec2(0.0,0.5);
+uniform vec2 mip0_position = vec2(0.5,0.5);
 
 uniform sampler2D mip1;
-uniform vec2 mip1_position = vec2(0.0,0.5);
+uniform vec2 mip1_position = vec2(0.5,0.5);
 
 uniform sampler2D mip2;
-uniform vec2 mip2_position = vec2(0.0,0.5);
+uniform vec2 mip2_position = vec2(0.5,0.5);
 
 uniform sampler2D mip3;
-uniform vec2 mip3_position = vec2(0.0,0.5);
+uniform vec2 mip3_position = vec2(0.5,0.5);
 
 out vec4 frag_out_color;
 

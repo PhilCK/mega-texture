@@ -161,7 +161,7 @@ int main()
     assert(green_grid_texture.is_valid());
     SOIL_free_image_data(gre_image);
 
-    const std::string red_tex = texture_filepath + "dev_grid_red_512.png";
+    const std::string red_tex = texture_filepath + "mega_texture_6.bmp";
     uint8_t *red_image = SOIL_load_image(red_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
     red_grid_texture.load_data(red_image, tex_width, tex_height);
     assert(red_grid_texture.is_valid());
