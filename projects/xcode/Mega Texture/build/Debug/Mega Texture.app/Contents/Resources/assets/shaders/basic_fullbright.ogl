@@ -1,0 +1,112 @@
+
+Full Bright Shader
+------------------
+A general purpose shader with no lighting calculations.
+
+
+[VERTEX]
+
+#version 150 core
+
+// Vertex Format
+in vec3 inPosition;
+in vec2 inTexC;
+in vec3 inNormal;
+
+// WVP matrix.
+uniform mat4 worldMat;
+uniform mat4 viewMat;
+uniform mat4 projMat;
+
+// Texture settings
+uniform vec2 texScale  = vec2(1, 1);
+uniform vec2 texOffset = vec2(0, 0);
+
+// Other settings
+uniform vec3 vertScale = vec3(1, 1, 1);
+uniform vec4 color	   = vec4(1, 1, 1, 0);
+
+// Output Format
+out vec2 frag_tex_coords;
+
+void main()
+{
+// Position vert
+mat4 wvpMat = projMat * viewMat * worldMat;
+vec3 position = vec3(inPosition.x * vertScale.x, inPosition.y * vertScale.y, inPosition.z * vertScale.z);
+
+gl_Position = wvpMat * vec4(position, 1.0);
+
+// Update tex coords with given info.
+float u = (inTexC.x * texScale.x) + texOffset.x;
+float v = (inTexC.y * texScale.y) + texOffset.y;
+frag_tex_coords = vec2(u, v);
+}
+
+[/VERTEX]
+
+
+[PIXEL]
+
+#version 150
+
+in vec2 frag_tex_coords;
+
+uniform sampler2D mip0;
+uniform vec2 mip0_position = vec2(0.5,0.5);
+
+uniform sampler2D mip1;
+uniform vec2 mip1_position = vec2(0.5,0.5);
+
+uniform sampler2D mip2;
+uniform vec2 mip2_position = vec2(0.5,0.5);
+
+uniform sampler2D mip3;
+uniform vec2 mip3_position = vec2(0.5,0.5);
+
+out vec4 frag_out_color;
+
+
+void main()
+{
+  vec4 tex_color;
+
+
+  // These are constant.
+  float number_of_mips = 4;
+  float mip0_size = 1.0 / pow(2.0, 0);
+  float mip1_size = 1.0 / pow(2.0, 1);
+  float mip2_size = 1.0 / pow(2.0, 2);
+  float mip3_size = 1.0 / pow(2.0, 3);
+
+
+  // Highest mip (more detailed) to lowest (less detailed).
+  // I've not tested which way around is better. I suspect it doens't make much difference.
+
+
+  // High to low.
+  // Simple AABB to check if we need to sample inside.
+  if(length(mip3_position - frag_tex_coords) < (0.125 / 2))
+  {
+    vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 8 + 0.5, (mip3_position - frag_tex_coords).y * 8 + 0.5);
+    tex_color = texture(mip3, uv_adjusted);
+  }
+  else if(length(mip2_position - frag_tex_coords) < (0.25 / 2))
+  {
+    vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 4 + 0.5, (mip3_position - frag_tex_coords).y * 4 + 0.5);
+    tex_color = texture(mip2, uv_adjusted);
+  }
+  else if(length(mip1_position - frag_tex_coords) < (0.5 /2 ))
+  {
+    vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 2 + 0.5, (mip3_position - frag_tex_coords).y * 2 + 0.5);
+    tex_color = texture(mip1, uv_adjusted);
+  }
+  else
+  {
+    tex_color = texture(mip0, frag_tex_coords);
+  }
+
+  frag_out_color = tex_color;
+}
+
+[/PIXEL]
