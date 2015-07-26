@@ -21,11 +21,11 @@ In a nutshell the system keeps a number of 512 x 512 textures. These textures co
 
 ## Pros and Cons
 
-** Pros **
+**Pros**
 - Very very large areas of terrain can be uniquely textured.
 - Very low texture space, 5-6 (Whatever you wish) textures can be used to represent many km(s) of terrain. 
 
-** Cons **
+**Cons**
 - Primarily 2D, no overhangs or caves.
 - Requres constant rebuilding of textures.
 
