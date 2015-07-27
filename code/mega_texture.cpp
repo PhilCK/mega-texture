@@ -57,9 +57,21 @@ namespace
 void camera_control();
 
 #include <fstream>
-char* get_data()
+char* get_data(const uint32_t mip_level, const float center_x, const float center_y)
 {
-  const uint32_t size_of_data = 512 * 512 * 4;
+  const uint32_t bmp_bytes_header_offset  = 54;    // I don't think the data needs to be immediatly under the header.
+  const uint32_t mip_size                 = 512;
+  const uint32_t number_of_components     = 4;     // This could be 3 to save some space.
+  const uint32_t width_of_mega_texture    = 16384;
+  const uint32_t height_of_mega_texture   = 16384;
+  
+  // Sampling information
+  const uint32_t size_of_offset = width_of_mega_texture >> mip_level;
+  const uint32_t sample_step  = std::pow(2, mip_level);
+  const uint32_t x_start      = (center_x * width_of_mega_texture) - (size_of_offset / 2);
+  const uint32_t y_start      = (center_y * width_of_mega_texture) - (size_of_offset / 2);
+  
+  const uint32_t size_of_data = mip_size * mip_size * number_of_components;
   static char data[size_of_data];
   
   const auto path = util::get_resource_path() + "assets/textures/mega_texture_0.bmp";
@@ -68,19 +80,20 @@ char* get_data()
   
   if(fin.good())
   {
-    const char bmp_header_offset = 54;
-    const char size_of_sample = 6;
+    uint32_t d = 0;
     
     // Each row in destination texture.
     for(int i = 0; i < 512; ++i)
     {
-      const char row = 1;
-      const char col = 1;
-      
-      const char size_of_data_to_read = 4;
-      
-      fin.seekg(i * 512 * 4);
-      fin.read(&data[i * 512 * 4], (512 * 4));
+      for(int j = 0; j < 512; ++j)
+      {
+        const uint32_t y_pos = y_start + (i * width_of_mega_texture);
+        const uint32_t x_pos = x_start + (j * sample_step);
+        
+        fin.seekg(((y_pos + x_pos) * number_of_components) + bmp_bytes_header_offset);
+        fin.read(&data[d], (number_of_components));
+        d += number_of_components;
+      }
     }
   }
   
@@ -184,7 +197,7 @@ int main()
     
     const std::string orange_tex = texture_filepath + "dev_colored_squares_512.png";
     uint8_t *or_image = SOIL_load_image(orange_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
-    orange_grid_texture.load_data(get_data(), tex_width, tex_height);
+    orange_grid_texture.load_data(get_data(5, 0.5, 0.5), tex_width, tex_height);
     assert(orange_grid_texture.is_valid());
     SOIL_free_image_data(or_image);
     
@@ -210,11 +223,12 @@ int main()
   
   // Init math things
   {
-    camera_transform.position = caff_math::vector3_init(-4.f, 1.f, 1.f);
+    camera_transform.position = caff_math::vector3_init(-4.f, 200.f, 1.f);
     camera_transform.rotation = caff_math::quaternion_init_with_axis_angle(0, 1, 0, caff_math::quart_tau());
     
     // Mats
-    world = caff_math::matrix44_scale(10000, 10000, 10000);
+    const float scale = 10000.f;
+    world = caff_math::matrix44_scale(scale, 1, scale);
   }
   
   // Load a model
