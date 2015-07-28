@@ -66,10 +66,10 @@ char* get_data(const uint32_t mip_level, const float center_x, const float cente
   const uint32_t height_of_mega_texture   = 16384;
   
   // Sampling information
-  const uint32_t size_of_offset = width_of_mega_texture >> mip_level;
+  const uint32_t size_of_mip  = width_of_mega_texture >> mip_level;
   const uint32_t sample_step  = std::pow(2, mip_level);
-  const uint32_t x_start      = (center_x * width_of_mega_texture) - (size_of_offset / 2);
-  const uint32_t y_start      = (center_y * width_of_mega_texture) - (size_of_offset / 2);
+  const uint32_t x_start      = (width_of_mega_texture / 2) - (size_of_mip / 2);
+  const uint32_t y_start      = (height_of_mega_texture / 2) - (size_of_mip / 2);
   
   const uint32_t size_of_data = mip_size * mip_size * number_of_components;
   static char data[size_of_data];
@@ -87,10 +87,11 @@ char* get_data(const uint32_t mip_level, const float center_x, const float cente
     {
       for(int j = 0; j < 512; ++j)
       {
-        const uint32_t y_pos = y_start + (i * width_of_mega_texture);
-        const uint32_t x_pos = x_start + (j * sample_step);
+        const uint32_t y_pos = (y_start) + (i * width_of_mega_texture);
+        const uint32_t x_pos = x_start + j;
+        const uint32_t index = ((y_pos + x_pos) * sample_step) * number_of_components;
         
-        fin.seekg(((y_pos + x_pos) * number_of_components) + bmp_bytes_header_offset);
+        fin.seekg(index + bmp_bytes_header_offset);
         fin.read(&data[d], (number_of_components));
         d += number_of_components;
       }
@@ -171,7 +172,6 @@ int main()
   
   // Init Render things.
   {
-    input.set_mouse_hold(true);
     renderer::initialize();
     
     const auto resource_path = util::get_resource_path();
@@ -241,6 +241,8 @@ int main()
   
   // Game Loop
   {
+    input.set_mouse_hold(true);
+    
     while(!window.wants_to_quit())
     {
       game_loop();
