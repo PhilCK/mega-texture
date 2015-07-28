@@ -67,9 +67,9 @@ char* get_data(const uint32_t mip_level, const float center_x, const float cente
   
   // Sampling information
   const uint32_t size_of_mip  = width_of_mega_texture >> mip_level;
-  const uint32_t sample_step  = std::pow(2, mip_level);
-  const uint32_t x_start      = (width_of_mega_texture / 2) - (size_of_mip / 2);
-  const uint32_t y_start      = (height_of_mega_texture / 2) - (size_of_mip / 2);
+  const uint32_t sample_step  = size_of_mip / 512;
+  const uint32_t x_start      = (width_of_mega_texture - size_of_mip);
+  const uint32_t y_start      = (height_of_mega_texture - size_of_mip);
   
   const uint32_t size_of_data = mip_size * mip_size * number_of_components;
   static char data[size_of_data];
@@ -83,19 +83,52 @@ char* get_data(const uint32_t mip_level, const float center_x, const float cente
     uint32_t d = 0;
     
     // Each row in destination texture.
-    for(int i = 0; i < 512; ++i)
+//    for(int i = 0; i < 512; ++i)
+//    {
+//      for(int j = 0; j < 512; ++j)
+//      {
+//        const uint32_t y_pos = (y_start) + (i * width_of_mega_texture);
+//        const uint32_t x_pos = x_start + j;
+//        const uint32_t index = ((y_pos + x_pos) * sample_step) * number_of_components;
+//        
+//        fin.seekg(index + bmp_bytes_header_offset);
+//        fin.read(&data[d], (number_of_components));
+//        d += number_of_components;
+//      }
+//    }
+    
+//    for(int i = 0; i < (512 * 512); ++i)
+//    {
+//      const uint32_t row = (i / 512);
+//      const uint32_t col = (i % 512);
+//      
+//      const uint32_t row_with_offsets = ((row + y_start) * width_of_mega_texture);
+//      const uint32_t col_with_offsets = (col + x_start);
+//      
+//      const uint32_t pixel_to_sample = ((row_with_offsets + col_with_offsets) * sample_step);
+//      const uint32_t index           = pixel_to_sample * number_of_components;
+//      
+//      fin.seekg(index + bmp_bytes_header_offset);
+//      fin.read(&data[d], (number_of_components));
+//      d += number_of_components;
+//    }
+    
+    for(int i = 0; i < (512 * 512); ++i)
     {
-      for(int j = 0; j < 512; ++j)
-      {
-        const uint32_t y_pos = (y_start) + (i * width_of_mega_texture);
-        const uint32_t x_pos = x_start + j;
-        const uint32_t index = ((y_pos + x_pos) * sample_step) * number_of_components;
-        
-        fin.seekg(index + bmp_bytes_header_offset);
-        fin.read(&data[d], (number_of_components));
-        d += number_of_components;
-      }
+      const uint32_t row = (i / 512);
+      const uint32_t col = (i % 512);
+      
+      const uint32_t row_with_offsets = ((row + y_start) * width_of_mega_texture);
+      const uint32_t col_with_offsets = (col + x_start);
+      
+      const uint32_t pixel_to_sample = (row_with_offsets + col_with_offsets) * sample_step;
+      const uint32_t index           = pixel_to_sample * number_of_components;
+      
+      fin.seekg(index + bmp_bytes_header_offset);
+      fin.read(&data[d], (number_of_components));
+      d += number_of_components;
     }
+    
   }
   
   //std::istringstream(std::string(buffer, buffer+40));
@@ -129,11 +162,16 @@ void game_loop()
   simple_shader.set_raw_data("worldMat", caff_math::matrix44_get_data(world), sizeof(caff_math::matrix44));
   simple_shader.set_raw_data("viewMat",  caff_math::matrix44_get_data(view),  sizeof(caff_math::matrix44));
   simple_shader.set_raw_data("projMat",  caff_math::matrix44_get_data(proj),  sizeof(caff_math::matrix44));
-  simple_shader.set_texture("mip0", red_grid_texture);
-  simple_shader.set_texture("mip1", orange_grid_texture);
-  simple_shader.set_texture("mip2", green_grid_texture);
-  simple_shader.set_texture("mip3", orange_grid_texture);
+//  simple_shader.set_texture("mip0", red_grid_texture);
+//  simple_shader.set_texture("mip1", orange_grid_texture);
+//  simple_shader.set_texture("mip2", green_grid_texture);
+//  simple_shader.set_texture("mip3", orange_grid_texture);
 //  simple_shader.set_texture("mip05", green_grid_texture);
+  simple_shader.set_texture("mip0", dynamic_mips.at(0));
+  simple_shader.set_texture("mip1", dynamic_mips.at(1));
+  simple_shader.set_texture("mip2", dynamic_mips.at(2));
+  simple_shader.set_texture("mip3", dynamic_mips.at(3));
+  
   
   renderer::draw(simple_shader, vert_fmt, obj_plane);
   
@@ -197,7 +235,7 @@ int main()
     
     const std::string orange_tex = texture_filepath + "dev_colored_squares_512.png";
     uint8_t *or_image = SOIL_load_image(orange_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
-    orange_grid_texture.load_data(get_data(5, 0.5, 0.5), tex_width, tex_height);
+    orange_grid_texture.load_data(get_data(0, 0.5, 0.5), tex_width, tex_height);
     assert(orange_grid_texture.is_valid());
     SOIL_free_image_data(or_image);
     
@@ -214,16 +252,19 @@ int main()
     SOIL_free_image_data(red_image);
     
     // Load up mips, with no data.
-    for(auto &mip : dynamic_mips)
+    //for(auto &mip : dynamic_mips)
+    for(uint32_t m = 0; m < dynamic_mips.size(); ++m)
     {
-      mip.load_data(nullptr, 512, 512);
+      auto &mip = dynamic_mips.at(m);
+      
+      mip.load_data(get_data(m, 0.5f, 0.5f), 512, 512);
       assert(mip.is_valid());
     }
   }
   
   // Init math things
   {
-    camera_transform.position = caff_math::vector3_init(-4.f, 200.f, 1.f);
+    camera_transform.position = caff_math::vector3_init(1.f, 600.f, -800.f);
     camera_transform.rotation = caff_math::quaternion_init_with_axis_angle(0, 1, 0, caff_math::quart_tau());
     
     // Mats
