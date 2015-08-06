@@ -22,7 +22,7 @@ namespace
   const uint32_t screen_height          = 600;
   const uint32_t mega_texture_size      = 32768;
   const uint32_t mega_texture_mip_size  = 512;
-  const uint32_t number_of_mips         = 5;
+  const uint32_t number_of_mips         = 6;
   const float camera_move_speed         = 3.3f;
   const float mouse_move_speed          = 0.002f;
   
@@ -40,9 +40,9 @@ namespace
   renderer::shader                              simple_shader;
   renderer::vertex_format                       vert_fmt;
   std::array<renderer::texture, number_of_mips> dynamic_mips;
-  renderer::texture                             green_grid_texture;
-  renderer::texture                             orange_grid_texture;
-  renderer::texture                             red_grid_texture;
+//  renderer::texture                             green_grid_texture;
+//  renderer::texture                             orange_grid_texture;
+//  renderer::texture                             red_grid_texture;
   renderer::vertex_buffer                       obj_plane;
   
   // Math things
@@ -68,67 +68,47 @@ char* get_data(const uint32_t mip_level, const float center_x, const float cente
   // Sampling information
   const uint32_t size_of_mip  = width_of_mega_texture >> mip_level;
   const uint32_t sample_step  = size_of_mip / 512;
-  const uint32_t x_start      = (width_of_mega_texture - size_of_mip);
-  const uint32_t y_start      = (height_of_mega_texture - size_of_mip);
+  const uint32_t x_start      = 0;//(width_of_mega_texture - size_of_mip);
+  const uint32_t y_start      = 0;//(height_of_mega_texture - size_of_mip);
   
   const uint32_t size_of_data = mip_size * mip_size * number_of_components;
   static char data[size_of_data];
+ 
+  auto what_file = [](const uint32_t mip)
+  {
+    switch(mip)
+    {
+      case(5):
+        return util::get_resource_path() + "assets/textures/mega_texture_5.bmp";
+      case(4):
+        return util::get_resource_path() + "assets/textures/mega_texture_4.bmp";
+      case(3):
+        return util::get_resource_path() + "assets/textures/mega_texture_3.bmp";
+      case(2):
+        return util::get_resource_path() + "assets/textures/mega_texture_2.bmp";
+      case(1):
+        return util::get_resource_path() + "assets/textures/mega_texture_1.bmp";
+      case(0):
+        return util::get_resource_path() + "assets/textures/mega_texture_0.bmp";
+      default:
+        assert(false);
+    }
+  };
   
-  const auto path = util::get_resource_path() + "assets/textures/mega_texture_0.bmp";
+  const std::string get_file = what_file(mip_level);
   
-  std::ifstream fin(path, std::ios::binary | std::ios::in);
+  std::ifstream fin(get_file, std::ios::binary | std::ios::in);
+  
   
   if(fin.good())
   {
     uint32_t d = 0;
-    
-    // Each row in destination texture.
-//    for(int i = 0; i < 512; ++i)
-//    {
-//      for(int j = 0; j < 512; ++j)
-//      {
-//        const uint32_t y_pos = (y_start) + (i * width_of_mega_texture);
-//        const uint32_t x_pos = x_start + j;
-//        const uint32_t index = ((y_pos + x_pos) * sample_step) * number_of_components;
-//        
-//        fin.seekg(index + bmp_bytes_header_offset);
-//        fin.read(&data[d], (number_of_components));
-//        d += number_of_components;
-//      }
-//    }
-    
-//    for(int i = 0; i < (512 * 512); ++i)
-//    {
-//      const uint32_t row = (i / 512);
-//      const uint32_t col = (i % 512);
-//      
-//      const uint32_t row_with_offsets = ((row + y_start) * width_of_mega_texture);
-//      const uint32_t col_with_offsets = (col + x_start);
-//      
-//      const uint32_t pixel_to_sample = ((row_with_offsets + col_with_offsets) * sample_step);
-//      const uint32_t index           = pixel_to_sample * number_of_components;
-//      
-//      fin.seekg(index + bmp_bytes_header_offset);
-//      fin.read(&data[d], (number_of_components));
-//      d += number_of_components;
-//    }
-    
-    for(int i = 0; i < (512 * 512); ++i)
+    for(int i = 0; i < (512*512); ++i)
     {
-      const uint32_t row = (i / 512);
-      const uint32_t col = (i % 512);
-      
-      const uint32_t row_with_offsets = ((row + y_start) * width_of_mega_texture);
-      const uint32_t col_with_offsets = (col + x_start);
-      
-      const uint32_t pixel_to_sample = (row_with_offsets + col_with_offsets) * sample_step;
-      const uint32_t index           = pixel_to_sample * number_of_components;
-      
-      fin.seekg(index + bmp_bytes_header_offset);
+      fin.seekg((i * number_of_components) + bmp_bytes_header_offset);
       fin.read(&data[d], (number_of_components));
       d += number_of_components;
     }
-    
   }
   
   //std::istringstream(std::string(buffer, buffer+40));
@@ -162,16 +142,13 @@ void game_loop()
   simple_shader.set_raw_data("worldMat", caff_math::matrix44_get_data(world), sizeof(caff_math::matrix44));
   simple_shader.set_raw_data("viewMat",  caff_math::matrix44_get_data(view),  sizeof(caff_math::matrix44));
   simple_shader.set_raw_data("projMat",  caff_math::matrix44_get_data(proj),  sizeof(caff_math::matrix44));
-//  simple_shader.set_texture("mip0", red_grid_texture);
-//  simple_shader.set_texture("mip1", orange_grid_texture);
-//  simple_shader.set_texture("mip2", green_grid_texture);
-//  simple_shader.set_texture("mip3", orange_grid_texture);
-//  simple_shader.set_texture("mip05", green_grid_texture);
+
   simple_shader.set_texture("mip0", dynamic_mips.at(0));
   simple_shader.set_texture("mip1", dynamic_mips.at(1));
   simple_shader.set_texture("mip2", dynamic_mips.at(2));
   simple_shader.set_texture("mip3", dynamic_mips.at(3));
-  
+  simple_shader.set_texture("mip4", dynamic_mips.at(4));
+  simple_shader.set_texture("mip5", dynamic_mips.at(5));
   
   renderer::draw(simple_shader, vert_fmt, obj_plane);
   
@@ -230,26 +207,26 @@ int main()
     
     const std::string texture_filepath = util::get_resource_path() + "assets/textures/";
     
-    int32_t tex_height = 0;
-    int32_t tex_width = 0;
+//    int32_t tex_height = 0;
+//    int32_t tex_width = 0;
     
-    const std::string orange_tex = texture_filepath + "dev_colored_squares_512.png";
-    uint8_t *or_image = SOIL_load_image(orange_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
-    orange_grid_texture.load_data(get_data(0, 0.5, 0.5), tex_width, tex_height);
-    assert(orange_grid_texture.is_valid());
-    SOIL_free_image_data(or_image);
-    
-    const std::string green_tex = texture_filepath + "dev_grid_green_512.png";
-    uint8_t *gre_image = SOIL_load_image(green_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
-    green_grid_texture.load_data(gre_image, tex_width, tex_height);
-    assert(green_grid_texture.is_valid());
-    SOIL_free_image_data(gre_image);
-
-    const std::string red_tex = texture_filepath + "mega_texture_6.bmp";
-    uint8_t *red_image = SOIL_load_image(red_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
-    red_grid_texture.load_data(red_image, tex_width, tex_height);
-    assert(red_grid_texture.is_valid());
-    SOIL_free_image_data(red_image);
+//    const std::string orange_tex = texture_filepath + "dev_colored_squares_512.png";
+//    uint8_t *or_image = SOIL_load_image(orange_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
+//    orange_grid_texture.load_data(get_data(0, 0.5, 0.5), tex_width, tex_height);
+//    assert(orange_grid_texture.is_valid());
+//    SOIL_free_image_data(or_image);
+//    
+//    const std::string green_tex = texture_filepath + "dev_grid_green_512.png";
+//    uint8_t *gre_image = SOIL_load_image(green_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
+//    green_grid_texture.load_data(gre_image, tex_width, tex_height);
+//    assert(green_grid_texture.is_valid());
+//    SOIL_free_image_data(gre_image);
+//
+//    const std::string red_tex = texture_filepath + "mega_texture_6.bmp";
+//    uint8_t *red_image = SOIL_load_image(red_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
+//    red_grid_texture.load_data(red_image, tex_width, tex_height);
+//    assert(red_grid_texture.is_valid());
+//    SOIL_free_image_data(red_image);
     
     // Load up mips, with no data.
     //for(auto &mip : dynamic_mips)
