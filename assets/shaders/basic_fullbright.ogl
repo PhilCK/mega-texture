@@ -87,8 +87,9 @@ void main()
 
 
   // Highest mip (more detailed) to lowest (less detailed).
-  // I've not tested which way around is better. I suspect it doens't make much difference.
-
+  // These branches are erm, bad :)
+  // Need to test to see how best to sample from them.
+  // Could we bake all the mips into one texture? Seems possible.
 
   if(length(mip3_position - frag_tex_coords) < (0.03125 / 2))
   {
@@ -98,30 +99,30 @@ void main()
   else if(length(mip3_position - frag_tex_coords) < (0.0625 / 2))
   {
     vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 16 + 0.5, (mip3_position - frag_tex_coords).y * 16 + 0.5);
-    //tex_color = texture(mip1, uv_adjusted);
-    tex_color = vec4(1,1,0,1);
+    tex_color = texture(mip1, uv_adjusted);
+    //tex_color = vec4(1,1,0,1);
   }
   else if(length(mip3_position - frag_tex_coords) < (0.125 / 2))
   {
     vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 8 + 0.5, (mip3_position - frag_tex_coords).y * 8 + 0.5);
-    //tex_color = texture(mip2, uv_adjusted);
-    tex_color = vec4(1,0,1,1);
+    tex_color = texture(mip2, uv_adjusted);
+    //tex_color = vec4(1,0,1,1);
   }
   else if(length(mip2_position - frag_tex_coords) < (0.25 / 2))
   {
     vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 4 + 0.5, (mip3_position - frag_tex_coords).y * 4 + 0.5);
-    //tex_color = texture(mip3, uv_adjusted);
-    tex_color = vec4(0,1,0,1);
+    tex_color = texture(mip3, uv_adjusted);
+    //tex_color = vec4(0,1,0,1);
   }
   else if(length(mip1_position - frag_tex_coords) < (0.5 / 2))
   {
     vec2 uv_adjusted = vec2((mip3_position - frag_tex_coords).x * 2 + 0.5, (mip3_position - frag_tex_coords).y * 2 + 0.5);
-    //tex_color = texture(mip4, uv_adjusted);
-    tex_color = vec4(0,0,1,1);
+    tex_color = texture(mip4, uv_adjusted);
+    //tex_color = vec4(0,0,1,1);
   }
   else
   {
-    tex_color = texture(mip5, frag_tex_coords);
+    tex_color = texture(mip5, -frag_tex_coords);
   }
 
   frag_out_color = tex_color;

@@ -3,14 +3,9 @@
 #include <math/math.hpp>
 #include <utils/directory.hpp>
 #include <utils/obj_model_loader.hpp>
-
 #include <SOIL/SOIL.h>
-
 #include <assert.h>
 #include <iostream>
-
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 
 // In an effort to keep this demo consince I've just dumped the varables here.
@@ -20,8 +15,6 @@ namespace
   // Some constants
   const uint32_t screen_width           = 1024;
   const uint32_t screen_height          = 600;
-  const uint32_t mega_texture_size      = 32768;
-  const uint32_t mega_texture_mip_size  = 512;
   const uint32_t number_of_mips         = 6;
   const float camera_move_speed         = 3.3f;
   const float mouse_move_speed          = 0.002f;
@@ -40,9 +33,6 @@ namespace
   renderer::shader                              simple_shader;
   renderer::vertex_format                       vert_fmt;
   std::array<renderer::texture, number_of_mips> dynamic_mips;
-//  renderer::texture                             green_grid_texture;
-//  renderer::texture                             orange_grid_texture;
-//  renderer::texture                             red_grid_texture;
   renderer::vertex_buffer                       obj_plane;
   
   // Math things
@@ -60,19 +50,10 @@ void camera_control();
 char* get_data(const uint32_t mip_level, const float center_x, const float center_y)
 {
   const uint32_t bmp_bytes_header_offset  = 54;    // I don't think the data needs to be immediatly under the header.
-  const uint32_t mip_size                 = 512;
   const uint32_t number_of_components     = 4;     // This could be 3 to save some space.
   const uint32_t width_of_mega_texture    = 16384;
-  const uint32_t height_of_mega_texture   = 16384;
   
-  // Sampling information
-  const uint32_t size_of_mip  = width_of_mega_texture >> mip_level;
-  const uint32_t sample_step  = size_of_mip / 512;
-  const uint32_t x_start      = 0;//(width_of_mega_texture - size_of_mip);
-  const uint32_t y_start      = 0;//(height_of_mega_texture - size_of_mip);
-  
-  const uint32_t size_of_data = mip_size * mip_size * number_of_components;
-  static char data[size_of_data];
+  static char data[512 * 512 * 4];
  
   auto what_file = [](const uint32_t mip)
   {
@@ -99,35 +80,28 @@ char* get_data(const uint32_t mip_level, const float center_x, const float cente
   
   std::ifstream fin(get_file, std::ios::binary | std::ios::in);
   
+  uint32_t size_of_texture = width_of_mega_texture >> (mip_level);
+  
+  const uint32_t start_x = (size_of_texture / 2) - (512 / 2);
+  const uint32_t start_y = (size_of_texture / 2) - (512 / 2);
   
   if(fin.good())
   {
     uint32_t d = 0;
     for(int i = 0; i < (512*512); ++i)
     {
-      fin.seekg((i * number_of_components) + bmp_bytes_header_offset);
+      const uint32_t col = (i % 512) + start_x;
+      const uint32_t row = ((i / 512) + start_y) * size_of_texture;
+    
+      const uint32_t index = col + row;
+    
+      fin.seekg((index * number_of_components) + bmp_bytes_header_offset);
       fin.read(&data[d], (number_of_components));
       d += number_of_components;
     }
   }
   
-  //std::istringstream(std::string(buffer, buffer+40));
-  
   return &data[0];
-}
-
-
-// We build the mips on the threads.
-void thread_task()
-{
-
-}
-
-
-// Generate the tasks for the mip generation.
-void generate_mips()
-{
-  
 }
 
 
@@ -192,7 +166,6 @@ int main()
     const auto resource_path = util::get_resource_path();
     
     renderer::shader_code shd_code = renderer::shader_utils::get_shader_code_from_tagged_file(resource_path + "assets/shaders/basic_fullbright.ogl");
-    //renderer::shader simple_shader(shd_code);
     simple_shader.load_shader(shd_code);
     assert(simple_shader.is_valid());
     
@@ -206,30 +179,8 @@ int main()
     assert(vert_fmt.is_valid());
     
     const std::string texture_filepath = util::get_resource_path() + "assets/textures/";
-    
-//    int32_t tex_height = 0;
-//    int32_t tex_width = 0;
-    
-//    const std::string orange_tex = texture_filepath + "dev_colored_squares_512.png";
-//    uint8_t *or_image = SOIL_load_image(orange_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
-//    orange_grid_texture.load_data(get_data(0, 0.5, 0.5), tex_width, tex_height);
-//    assert(orange_grid_texture.is_valid());
-//    SOIL_free_image_data(or_image);
-//    
-//    const std::string green_tex = texture_filepath + "dev_grid_green_512.png";
-//    uint8_t *gre_image = SOIL_load_image(green_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
-//    green_grid_texture.load_data(gre_image, tex_width, tex_height);
-//    assert(green_grid_texture.is_valid());
-//    SOIL_free_image_data(gre_image);
-//
-//    const std::string red_tex = texture_filepath + "mega_texture_6.bmp";
-//    uint8_t *red_image = SOIL_load_image(red_tex.c_str(), &tex_width, &tex_height, 0, SOIL_LOAD_RGBA);
-//    red_grid_texture.load_data(red_image, tex_width, tex_height);
-//    assert(red_grid_texture.is_valid());
-//    SOIL_free_image_data(red_image);
-    
+
     // Load up mips, with no data.
-    //for(auto &mip : dynamic_mips)
     for(uint32_t m = 0; m < dynamic_mips.size(); ++m)
     {
       auto &mip = dynamic_mips.at(m);
